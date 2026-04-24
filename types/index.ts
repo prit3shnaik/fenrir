@@ -22,9 +22,9 @@ export interface FenrirNode {
   label: string
   type: NodeType
   indicatorType?: IndicatorType
-  riskScore: number       // 0–100
+  riskScore: number
   riskLevel: RiskLevel
-  confidence: number      // 0–1
+  confidence: number
   notes: string
   enriched: boolean
   loading: boolean
@@ -68,12 +68,14 @@ export interface ScannerProvider {
   scan(indicator: string, type: IndicatorType, apiKey: string): Promise<EnrichmentResult>
 }
 
+// Index signature added so ApiKeys is assignable to Record<string, string>
 export interface ApiKeys {
   virustotal: string
   urlscan: string
   abuseipdb: string
   otx: string
   triage: string
+  [key: string]: string
 }
 
 export interface SavedCase {
