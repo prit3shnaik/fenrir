@@ -4,15 +4,6 @@ const nextConfig = {
   assetPrefix: '/fenrir/',
   output: 'export',
   trailingSlash: true,
-  images: {
-    unoptimized: true,
-  },
-  typescript: {
-    ignoreBuildErrors: false,
-  },
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
+  images: { unoptimized: true },
 }
-
 module.exports = nextConfig
