@@ -1,10 +1,10 @@
 import { create } from 'zustand'
-import { immer } from 'zustand/middleware/immer'
 import type {
   FenrirNode, FenrirEdge, InvestigationState,
   EnrichmentResult, GraphMode, LayoutType, ApiKeys
 } from '@/types'
 import { applyLayout } from '@/utils/graphUtils'
+import { aggregateRiskScore, riskLevelFromScore } from '@/utils/riskScoring'
 
 interface Actions {
   setApiKeys: (keys: Partial<ApiKeys>) => void
@@ -35,74 +35,74 @@ const initialState: InvestigationState = {
   enrichmentResults: {},
 }
 
-export const useStore = create<InvestigationState & Actions>()(
-  immer((set, get) => ({
-    ...initialState,
+export const useStore = create<InvestigationState & Actions>()((set, get) => ({
+  ...initialState,
 
-    setApiKeys: (keys) => set(s => { Object.assign(s.apiKeys, keys) }),
+  setApiKeys: (keys) => set(s => ({ apiKeys: { ...s.apiKeys, ...keys } })),
 
-    addNode: (node) => set(s => {
-      if (!s.nodes.find(n => n.id === node.id)) s.nodes.push(node)
-    }),
+  addNode: (node) => set(s => {
+    if (s.nodes.find(n => n.id === node.id)) return s
+    return { nodes: [...s.nodes, node] }
+  }),
 
-    upsertNode: (node) => set(s => {
-      const idx = s.nodes.findIndex(n => n.id === node.id)
-      if (idx >= 0) s.nodes[idx] = node
-      else s.nodes.push(node)
-    }),
+  upsertNode: (node) => set(s => {
+    const idx = s.nodes.findIndex(n => n.id === node.id)
+    if (idx >= 0) {
+      const nodes = [...s.nodes]
+      nodes[idx] = node
+      return { nodes }
+    }
+    return { nodes: [...s.nodes, node] }
+  }),
 
-    addEdge: (edge) => set(s => {
-      if (!s.edges.find(e => e.id === edge.id)) s.edges.push(edge)
-    }),
+  addEdge: (edge) => set(s => {
+    if (s.edges.find(e => e.id === edge.id)) return s
+    return { edges: [...s.edges, edge] }
+  }),
 
-    selectNode: (id) => set(s => { s.selectedNodeId = id }),
+  selectNode: (id) => set(() => ({ selectedNodeId: id })),
 
-    setNodeLoading: (id, loading) => set(s => {
-      const n = s.nodes.find(n => n.id === id)
-      if (n) n.loading = loading
-    }),
+  setNodeLoading: (id, loading) => set(s => ({
+    nodes: s.nodes.map(n => n.id === id ? { ...n, loading } : n)
+  })),
 
-    setEnrichmentResults: (nodeId, results) => set(s => {
-      s.enrichmentResults[nodeId] = results
-    }),
+  setEnrichmentResults: (nodeId, results) => set(s => ({
+    enrichmentResults: { ...s.enrichmentResults, [nodeId]: results }
+  })),
 
-    updateNodeFromEnrichment: (nodeId, results) => set(s => {
-      const node = s.nodes.find(n => n.id === nodeId)
-      if (!node) return
-      const { aggregateRiskScore, riskLevelFromScore } = require('@/utils/riskScoring')
-      node.riskScore = aggregateRiskScore(results)
-      node.riskLevel = riskLevelFromScore(node.riskScore)
-      node.enriched = true
-      node.loading = false
-      s.enrichmentResults[nodeId] = results
-    }),
+  updateNodeFromEnrichment: (nodeId, results) => set(s => {
+    const riskScore = aggregateRiskScore(results)
+    const riskLevel = riskLevelFromScore(riskScore)
+    return {
+      nodes: s.nodes.map(n =>
+        n.id === nodeId
+          ? { ...n, riskScore, riskLevel, enriched: true, loading: false }
+          : n
+      ),
+      enrichmentResults: { ...s.enrichmentResults, [nodeId]: results },
+    }
+  }),
 
-    setNodeNotes: (id, notes) => set(s => {
-      const n = s.nodes.find(n => n.id === id)
-      if (n) n.notes = notes
-    }),
+  setNodeNotes: (id, notes) => set(s => ({
+    nodes: s.nodes.map(n => n.id === id ? { ...n, notes } : n)
+  })),
 
-    setGraphMode: (mode) => set(s => { s.graphMode = mode }),
+  setGraphMode: (mode) => set(() => ({ graphMode: mode })),
 
-    setLayout: (layout) => set(s => { s.layout = layout }),
+  setLayout: (layout) => set(() => ({ layout })),
 
-    applyCurrentLayout: () => set(s => {
-      const laid = applyLayout(s.nodes as FenrirNode[], s.edges as FenrirEdge[], s.layout)
-      laid.forEach((n, i) => { s.nodes[i].position = n.position })
-    }),
+  applyCurrentLayout: () => set(s => {
+    const laid = applyLayout(s.nodes, s.edges, s.layout)
+    return { nodes: laid }
+  }),
 
-    resetGraph: () => set(() => ({ ...initialState })),
+  resetGraph: () => set(() => ({ ...initialState })),
 
-    loadGraph: (nodes, edges) => set(s => {
-      s.nodes = nodes
-      s.edges = edges
-      s.selectedNodeId = null
-      s.enrichmentResults = {}
-    }),
+  loadGraph: (nodes, edges) => set(() => ({
+    nodes, edges, selectedNodeId: null, enrichmentResults: {}
+  })),
 
-    updateNodePosition: (id, position) => set(s => {
-      const n = s.nodes.find(n => n.id === id)
-      if (n) n.position = position
-    }),
-  }))
-)
+  updateNodePosition: (id, position) => set(s => ({
+    nodes: s.nodes.map(n => n.id === id ? { ...n, position } : n)
+  })),
+}))
