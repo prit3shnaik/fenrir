@@ -1,11 +1,4 @@
 {
   "installCommand": "npm install --legacy-peer-deps",
-  "framework": "nextjs",
-  "redirects": [
-    {
-      "source": "/",
-      "destination": "/fenrir",
-      "permanent": false
-    }
-  ]
+  "framework": "nextjs"
 }
