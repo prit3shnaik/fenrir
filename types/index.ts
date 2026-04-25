@@ -1,22 +1,7 @@
 export type IndicatorType = 'ip' | 'domain' | 'url' | 'hash'
-
-export type NodeType =
-  | 'Indicator'
-  | 'Infrastructure'
-  | 'Threat'
-  | 'IntelSource'
-  | 'Verdict'
-
-export type EdgeType =
-  | 'resolves_to'
-  | 'hosts'
-  | 'related_to'
-  | 'reported_by'
-  | 'seen_with'
-  | 'communicates_with'
-
+export type NodeType = 'Indicator' | 'Infrastructure' | 'Threat' | 'IntelSource' | 'Verdict'
+export type EdgeType = 'resolves_to' | 'hosts' | 'related_to' | 'reported_by' | 'seen_with' | 'communicates_with'
 export type RiskLevel = 'critical' | 'high' | 'medium' | 'low' | 'unknown'
-
 export type Theme = 'dark' | 'light'
 
 export interface FenrirNode {
@@ -78,7 +63,8 @@ export interface ApiKeys {
   triage: string
   shodan: string
   greynoise: string
-  claude: string
+  gemini: string
+  groq: string
   [key: string]: string
 }
 
@@ -105,4 +91,4 @@ export interface InvestigationState {
   loading: boolean
   enrichmentResults: Record<string, EnrichmentResult[]>
   theme: Theme
-}
+  }
