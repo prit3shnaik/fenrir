@@ -22,6 +22,7 @@ interface Actions {
   resetGraph: () => void
   loadGraph: (nodes: FenrirNode[], edges: FenrirEdge[]) => void
   updateNodePosition: (id: string, position: { x: number; y: number }) => void
+  toggleTheme: () => void
 }
 
 const initialState: InvestigationState = {
@@ -30,12 +31,13 @@ const initialState: InvestigationState = {
   selectedNodeId: null,
   graphMode: 'infrastructure',
   layout: 'dagre',
-  apiKeys: { virustotal: '', urlscan: '', abuseipdb: '', otx: '', triage: '' },
+  apiKeys: { virustotal: '', urlscan: '', abuseipdb: '', otx: '', triage: '', shodan: '', greynoise: '', claude: '' },
   loading: false,
   enrichmentResults: {},
+  theme: 'dark',
 }
 
-export const useStore = create<InvestigationState & Actions>()((set, get) => ({
+export const useStore = create<InvestigationState & Actions>()((set) => ({
   ...initialState,
 
   setApiKeys: (keys) => set(s => ({ apiKeys: { ...s.apiKeys, ...keys } })),
@@ -88,15 +90,13 @@ export const useStore = create<InvestigationState & Actions>()((set, get) => ({
   })),
 
   setGraphMode: (mode) => set(() => ({ graphMode: mode })),
-
   setLayout: (layout) => set(() => ({ layout })),
 
-  applyCurrentLayout: () => set(s => {
-    const laid = applyLayout(s.nodes, s.edges, s.layout)
-    return { nodes: laid }
-  }),
+  applyCurrentLayout: () => set(s => ({
+    nodes: applyLayout(s.nodes, s.edges, s.layout)
+  })),
 
-  resetGraph: () => set(() => ({ ...initialState })),
+  resetGraph: () => set(s => ({ ...initialState, theme: s.theme, apiKeys: s.apiKeys })),
 
   loadGraph: (nodes, edges) => set(() => ({
     nodes, edges, selectedNodeId: null, enrichmentResults: {}
@@ -105,4 +105,13 @@ export const useStore = create<InvestigationState & Actions>()((set, get) => ({
   updateNodePosition: (id, position) => set(s => ({
     nodes: s.nodes.map(n => n.id === id ? { ...n, position } : n)
   })),
+
+  toggleTheme: () => set(s => {
+    const next = s.theme === 'dark' ? 'light' : 'dark'
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('dark', next === 'dark')
+      document.documentElement.classList.toggle('light', next === 'light')
+    }
+    return { theme: next }
+  }),
 }))
