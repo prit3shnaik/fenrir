@@ -63,6 +63,7 @@ export interface ApiKeys {
   triage: string
   shodan: string
   greynoise: string
+  phishtank: string
   gemini: string
   groq: string
   [key: string]: string
@@ -91,4 +92,4 @@ export interface InvestigationState {
   loading: boolean
   enrichmentResults: Record<string, EnrichmentResult[]>
   theme: Theme
-  }
+}
