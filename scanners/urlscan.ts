@@ -1,4 +1,5 @@
 import type { ScannerProvider, EnrichmentResult, IndicatorType, RelationshipHint } from '@/types'
+import { proxyFetch } from '@/utils/proxyFetch'
 
 export class URLScanScanner implements ScannerProvider {
   name = 'URLScan'
@@ -11,7 +12,7 @@ export class URLScanScanner implements ScannerProvider {
       ? `page.domain:"${indicator}"`
       : `page.ip:"${indicator}"`
 
-    const res = await fetch(
+    const res = await proxyFetch(
       `https://urlscan.io/api/v1/search/?q=${encodeURIComponent(searchQuery)}&size=5`,
       { headers: apiKey ? { 'API-Key': apiKey } : {} }
     )
