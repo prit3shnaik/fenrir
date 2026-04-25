@@ -14,6 +14,9 @@ const ALLOWED_HOSTS = [
   'crt.sh',
   'check.torproject.org',
   'api.webcheck.pro',
+  'ip-api.com',
+  'urlhaus-api.abuse.ch',
+  'checkurl.phishtank.com',
 ]
 
 export async function POST(req: NextRequest) {
@@ -26,18 +29,15 @@ export async function POST(req: NextRequest) {
     }
 
     const { url, method = 'GET', headers = {}, body: reqBody } = body
-
     const target = new URL(url)
+
     if (!ALLOWED_HOSTS.includes(target.hostname)) {
-      return NextResponse.json({ error: 'Host not allowed' }, { status: 403 })
+      return NextResponse.json({ error: `Host not allowed: ${target.hostname}` }, { status: 403 })
     }
 
     const res = await fetch(url, {
       method,
-      headers: {
-        'User-Agent': 'Fenrir-ThreatIntel/1.0',
-        ...headers,
-      },
+      headers: { 'User-Agent': 'Fenrir-ThreatIntel/1.0', ...headers },
       body: reqBody ?? undefined,
     })
 
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       data = await res.text()
     }
 
-    return NextResponse.json({ data, status: res.status }, { status: 200 })
+    return NextResponse.json({ data, status: res.status })
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Proxy error' },
