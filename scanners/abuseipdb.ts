@@ -1,4 +1,5 @@
 import type { ScannerProvider, EnrichmentResult, IndicatorType } from '@/types'
+import { proxyFetch } from '@/utils/proxyFetch'
 
 export class AbuseIPDBScanner implements ScannerProvider {
   name = 'AbuseIPDB'
@@ -7,7 +8,7 @@ export class AbuseIPDBScanner implements ScannerProvider {
   async scan(indicator: string, _type: IndicatorType, apiKey: string): Promise<EnrichmentResult> {
     if (!apiKey) throw new Error('AbuseIPDB API key not set')
 
-    const res = await fetch(
+    const res = await proxyFetch(
       `https://api.abuseipdb.com/api/v2/check?ipAddress=${indicator}&maxAgeInDays=90&verbose`,
       { headers: { Key: apiKey, Accept: 'application/json' } }
     )
