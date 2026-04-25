@@ -1,4 +1,5 @@
 import type { ScannerProvider, EnrichmentResult, IndicatorType, RelationshipHint } from '@/types'
+import { proxyFetch } from '@/utils/proxyFetch'
 
 export class VirusTotalScanner implements ScannerProvider {
   name = 'VirusTotal'
@@ -8,7 +9,7 @@ export class VirusTotalScanner implements ScannerProvider {
     if (!apiKey) throw new Error('VirusTotal API key not set')
 
     const endpoint = this.getEndpoint(indicator, type)
-    const res = await fetch(endpoint, {
+    const res = await proxyFetch(endpoint, {
       headers: { 'x-apikey': apiKey },
     })
 
