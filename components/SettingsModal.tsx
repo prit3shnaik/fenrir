@@ -82,7 +82,7 @@ export default function SettingsModal({ open, onClose }: Props) {
                   onClick={() => setShow(s => ({ ...s, [id]: !s[id] }))}
                   className="p-2 rounded-lg border border-border text-muted hover:text-text"
                 >
-                  {show[id] ? <EyeOff size={13} /> : <Eye size={13] />}
+                  {show[id] ? <EyeOff size={13} /> : <Eye size={13} />}
                 </button>
               </div>
             </div>
