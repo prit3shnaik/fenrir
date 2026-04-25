@@ -19,7 +19,10 @@ const GraphCanvas = dynamic(() => import('@/components/GraphCanvas'), {
   ssr: false,
   loading: () => (
     <div className="flex-1 flex items-center justify-center bg-bg">
-      <div className="text-accent text-sm animate-pulse font-mono">Loading graph engine...</div>
+      <div className="flex items-center gap-2 text-accent text-sm font-mono">
+        <span className="w-4 h-4 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+        Loading graph engine...
+      </div>
     </div>
   ),
 })
@@ -27,69 +30,97 @@ const GraphCanvas = dynamic(() => import('@/components/GraphCanvas'), {
 const queryClient = new QueryClient()
 
 function FenrirApp() {
-  const [settings, setSettings] = useState(false)
+  const [settings, setSettings]   = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
-  const [bulkOpen, setBulkOpen] = useState(false)
-  const [panelOpen, setPanelOpen] = useState(true)
+  const [bulkOpen, setBulkOpen]   = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false) // closed by default on mobile
   const { investigate, newInvestigation } = useInvestigation()
   const { enrich } = useEnrichment()
-  const { nodes, edges, setApiKeys } = useStore()
+  const { nodes, edges, setApiKeys, theme } = useStore()
+
+  // Sync theme class
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+    document.documentElement.classList.toggle('light', theme === 'light')
+  }, [theme])
 
   useEffect(() => {
     loadApiKeys().then(k => setApiKeys(k))
   }, [setApiKeys])
 
+  // Open panel automatically when a node is selected
+  const { selectedNodeId } = useStore()
+  useEffect(() => {
+    if (selectedNodeId) setPanelOpen(true)
+  }, [selectedNodeId])
+
   const handleBulkInvestigate = useCallback(async (indicators: string[]) => {
     for (const ind of indicators) {
       await investigate(ind)
-      await new Promise(r => setTimeout(r, 300)) // small delay between each
+      await new Promise(r => setTimeout(r, 400))
     }
   }, [investigate])
 
   const handleSave = async () => {
     const id = `case-${Date.now()}`
-    const name = `Investigation ${new Date().toLocaleDateString()}`
-    await saveCase(caseToSaved(id, name, nodes, edges))
+    await saveCase(caseToSaved(id, `Investigation ${new Date().toLocaleDateString()}`, nodes, edges))
     const el = document.createElement('div')
     el.innerText = '✓ Case saved'
-    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:9999;pointer-events:none;'
+    el.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:9999;pointer-events:none;font-family:monospace;'
     document.body.appendChild(el)
     setTimeout(() => el.remove(), 2000)
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-bg">
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-border bg-surface flex-shrink-0">
-        <div className="flex items-center gap-2 flex-shrink-0">
+    <div className="flex flex-col h-[100dvh] w-screen overflow-hidden bg-bg">
+      {/* Header */}
+      <header className="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-surface flex-shrink-0">
+        {/* Logo — hidden on very small screens to save space */}
+        <div className="flex items-center gap-2 flex-shrink-0 hidden xs:flex">
           <div className="w-7 h-7 rounded-lg bg-accent/20 border border-accent/40 flex items-center justify-center">
             <span className="text-accent text-xs font-bold">⬡</span>
           </div>
-          <div>
+          <div className="hidden sm:block">
             <div className="text-sm font-bold tracking-tight text-text leading-none">Fenrir</div>
             <div className="text-[10px] text-muted leading-none">0xprit3sh</div>
           </div>
         </div>
-        <div className="flex-1">
+
+        {/* Search — takes all available space */}
+        <div className="flex-1 min-w-0">
           <SearchBar onSearch={(v) => newInvestigation(v)} />
         </div>
+
+        {/* Panel toggle */}
         <button
           onClick={() => setPanelOpen(p => !p)}
-          className="text-muted hover:text-text p-1.5 rounded transition-colors flex-shrink-0"
+          className="text-muted hover:text-text p-1.5 rounded-lg hover:bg-border transition-colors flex-shrink-0"
+          title={panelOpen ? 'Hide panel' : 'Show panel'}
         >
           {panelOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
         </button>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      {/* Main canvas + panel */}
+      <div className="flex flex-1 overflow-hidden min-h-0">
         <GraphCanvas />
+
+        {/* Intel panel — full screen on mobile, sidebar on desktop */}
         {panelOpen && (
-          <IntelPanel
-            onEnrich={(nodeId, label) => enrich(nodeId, label)}
-            onClose={() => setPanelOpen(false)}
-          />
+          <div className="
+            absolute inset-0 z-30 sm:relative sm:inset-auto
+            sm:w-72 sm:flex-shrink-0
+            flex flex-col
+          ">
+            <IntelPanel
+              onEnrich={(nodeId, label) => enrich(nodeId, label)}
+              onClose={() => setPanelOpen(false)}
+            />
+          </div>
         )}
       </div>
 
+      {/* Toolbar */}
       <Toolbar
         onOpenSettings={() => setSettings(true)}
         onOpenExport={() => setExportOpen(true)}
