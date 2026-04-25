@@ -68,13 +68,15 @@ export interface ScannerProvider {
   scan(indicator: string, type: IndicatorType, apiKey: string): Promise<EnrichmentResult>
 }
 
-// Index signature added so ApiKeys is assignable to Record<string, string>
 export interface ApiKeys {
   virustotal: string
   urlscan: string
   abuseipdb: string
   otx: string
   triage: string
+  shodan: string
+  greynoise: string
+  claude: string
   [key: string]: string
 }
 
