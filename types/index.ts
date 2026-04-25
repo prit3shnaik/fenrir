@@ -17,6 +17,8 @@ export type EdgeType =
 
 export type RiskLevel = 'critical' | 'high' | 'medium' | 'low' | 'unknown'
 
+export type Theme = 'dark' | 'light'
+
 export interface FenrirNode {
   id: string
   label: string
@@ -102,4 +104,5 @@ export interface InvestigationState {
   apiKeys: ApiKeys
   loading: boolean
   enrichmentResults: Record<string, EnrichmentResult[]>
+  theme: Theme
 }
