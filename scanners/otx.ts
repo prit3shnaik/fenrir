@@ -1,4 +1,5 @@
 import type { ScannerProvider, EnrichmentResult, IndicatorType, RelationshipHint } from '@/types'
+import { proxyFetch } from '@/utils/proxyFetch'
 
 export class OTXScanner implements ScannerProvider {
   name = 'OTX'
@@ -8,7 +9,7 @@ export class OTXScanner implements ScannerProvider {
     if (!apiKey) throw new Error('OTX API key not set')
 
     const section = type === 'hash' ? 'file' : type === 'ip' ? 'IPv4' : type
-    const res = await fetch(
+    const res = await proxyFetch(
       `https://otx.alienvault.com/api/v1/indicators/${section}/${indicator}/general`,
       { headers: { 'X-OTX-API-KEY': apiKey } }
     )
@@ -27,9 +28,7 @@ export class OTXScanner implements ScannerProvider {
     const pulses = ((data.pulse_info as Record<string, unknown>)?.pulses as Record<string, unknown>[]) ?? []
     pulses.slice(0, 3).forEach(p => {
       const name = p.name as string | undefined
-      if (name) {
-        relationships.push({ targetLabel: name, targetType: 'Threat', edgeType: 'reported_by' })
-      }
+      if (name) relationships.push({ targetLabel: name, targetType: 'Threat', edgeType: 'reported_by' })
       const t = p.tags as string[] | undefined
       if (t) tags.push(...t.slice(0, 3))
     })
