@@ -12,6 +12,9 @@ import { WhoisScanner } from './whois'
 import { BGPViewScanner } from './bgpview'
 import { CrtShScanner } from './crtsh'
 import { TorCheckScanner } from './torcheck'
+import { IPApiScanner } from './ipapi'
+import { URLHausScanner } from './urlhaus'
+import { PhishTankScanner } from './phishtank'
 
 export const SCANNERS: ScannerProvider[] = [
   new VirusTotalScanner(),
@@ -27,6 +30,9 @@ export const SCANNERS: ScannerProvider[] = [
   new BGPViewScanner(),
   new CrtShScanner(),
   new TorCheckScanner(),
+  new IPApiScanner(),
+  new URLHausScanner(),
+  new PhishTankScanner(),
 ]
 
 export function detectIndicatorType(value: string): IndicatorType {
