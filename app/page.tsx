@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import dynamic from 'next/dynamic'
 import SearchBar from '@/components/SearchBar'
@@ -7,15 +7,14 @@ import IntelPanel from '@/components/IntelPanel'
 import Toolbar from '@/components/Toolbar'
 import SettingsModal from '@/components/SettingsModal'
 import ExportModal from '@/components/ExportModal'
+import BulkImportModal from '@/components/BulkImportModal'
 import { useInvestigation } from '@/hooks/useInvestigation'
 import { useEnrichment } from '@/hooks/useEnrichment'
 import { useStore } from '@/store/useStore'
-import { loadApiKeys } from '@/utils/db'
-import { saveCase } from '@/utils/db'
+import { loadApiKeys, saveCase } from '@/utils/db'
 import { caseToSaved } from '@/utils/exportUtils'
 import { PanelRightClose, PanelRightOpen } from 'lucide-react'
 
-// Dynamic import for ReactFlow (client-only)
 const GraphCanvas = dynamic(() => import('@/components/GraphCanvas'), {
   ssr: false,
   loading: () => (
@@ -30,40 +29,36 @@ const queryClient = new QueryClient()
 function FenrirApp() {
   const [settings, setSettings] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [panelOpen, setPanelOpen] = useState(true)
-  const { investigate, pivotNode } = useInvestigation()
+  const { investigate, newInvestigation } = useInvestigation()
   const { enrich } = useEnrichment()
   const { nodes, edges, setApiKeys } = useStore()
 
-  // Load API keys on mount
   useEffect(() => {
     loadApiKeys().then(k => setApiKeys(k))
   }, [setApiKeys])
 
-  const handleSearch = (value: string) => {
-    investigate(value)
-  }
-
-  const handleEnrich = (nodeId: string, label: string) => {
-    enrich(nodeId, label)
-  }
+  const handleBulkInvestigate = useCallback(async (indicators: string[]) => {
+    for (const ind of indicators) {
+      await investigate(ind)
+      await new Promise(r => setTimeout(r, 300)) // small delay between each
+    }
+  }, [investigate])
 
   const handleSave = async () => {
     const id = `case-${Date.now()}`
     const name = `Investigation ${new Date().toLocaleDateString()}`
-    const saved = caseToSaved(id, name, nodes, edges)
-    await saveCase(saved)
-    // Simple feedback
+    await saveCase(caseToSaved(id, name, nodes, edges))
     const el = document.createElement('div')
     el.innerText = '✓ Case saved'
-    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:9999;'
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:9999;pointer-events:none;'
     document.body.appendChild(el)
     setTimeout(() => el.remove(), 2000)
   }
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-bg">
-      {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border bg-surface flex-shrink-0">
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="w-7 h-7 rounded-lg bg-accent/20 border border-accent/40 flex items-center justify-center">
@@ -75,7 +70,7 @@ function FenrirApp() {
           </div>
         </div>
         <div className="flex-1">
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar onSearch={(v) => newInvestigation(v)} />
         </div>
         <button
           onClick={() => setPanelOpen(p => !p)}
@@ -85,24 +80,30 @@ function FenrirApp() {
         </button>
       </header>
 
-      {/* Main */}
       <div className="flex flex-1 overflow-hidden">
         <GraphCanvas />
         {panelOpen && (
-          <IntelPanel onEnrich={handleEnrich} onClose={() => setPanelOpen(false)} />
+          <IntelPanel
+            onEnrich={(nodeId, label) => enrich(nodeId, label)}
+            onClose={() => setPanelOpen(false)}
+          />
         )}
       </div>
 
-      {/* Toolbar */}
       <Toolbar
         onOpenSettings={() => setSettings(true)}
         onOpenExport={() => setExportOpen(true)}
+        onOpenBulk={() => setBulkOpen(true)}
         onSave={handleSave}
       />
 
-      {/* Modals */}
       <SettingsModal open={settings} onClose={() => setSettings(false)} />
       <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} />
+      <BulkImportModal
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        onInvestigate={handleBulkInvestigate}
+      />
     </div>
   )
 }
