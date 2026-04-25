@@ -1,4 +1,5 @@
 import type { ScannerProvider, EnrichmentResult, IndicatorType } from '@/types'
+import { proxyFetch } from '@/utils/proxyFetch'
 
 export class TriageScanner implements ScannerProvider {
   name = 'Triage'
@@ -8,7 +9,7 @@ export class TriageScanner implements ScannerProvider {
     if (!apiKey) throw new Error('Triage API key not set')
 
     const query = type === 'hash' ? `sha256:${indicator}` : indicator
-    const res = await fetch(
+    const res = await proxyFetch(
       `https://tria.ge/api/v0/search?query=${encodeURIComponent(query)}&limit=5`,
       { headers: { Authorization: `Bearer ${apiKey}` } }
     )
@@ -16,10 +17,8 @@ export class TriageScanner implements ScannerProvider {
     if (!res.ok) throw new Error(`Triage HTTP ${res.status}`)
     const data = await res.json() as { data?: Record<string, unknown>[] }
     const samples = data.data ?? []
-
     const scores = samples.map(s => (s.score as number) ?? 0).filter(Boolean)
     const maxScore = scores.length > 0 ? Math.max(...scores) : 0
-
     const tags: string[] = []
     samples.forEach(s => {
       const t = s.tags as string[] | undefined
