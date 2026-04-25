@@ -6,6 +6,7 @@ import NodeDetails from './NodeDetails'
 import TimelinePanel from './TimelinePanel'
 import GraphSearch from './GraphSearch'
 import AISummary from './AISummary'
+import MitrePanel from './MitrePanel'
 import clsx from 'clsx'
 
 interface Props {
@@ -13,44 +14,47 @@ interface Props {
   onClose?: () => void
 }
 
-type Tab = 'details' | 'nodes' | 'timeline' | 'search' | 'ai'
+type Tab = 'details' | 'nodes' | 'search' | 'timeline' | 'mitre' | 'ai'
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'details',  label: 'Details'   },
+  { id: 'nodes',    label: 'Nodes'     },
+  { id: 'search',   label: 'Filter'    },
+  { id: 'timeline', label: 'Timeline'  },
+  { id: 'mitre',    label: '⚑ ATT&CK' },
+  { id: 'ai',       label: '✦ AI'      },
+]
 
 export default function IntelPanel({ onEnrich, onClose }: Props) {
   const { nodes, selectedNodeId, selectNode } = useStore()
   const [tab, setTab] = useState<Tab>('details')
 
-  const TABS: { id: Tab; label: string }[] = [
-    { id: 'details', label: 'Details' },
-    { id: 'nodes', label: `Nodes (${nodes.length})` },
-    { id: 'search', label: 'Filter' },
-    { id: 'timeline', label: 'Timeline' },
-    { id: 'ai', label: '✦ AI' },
-  ]
-
   return (
-    <div className="flex flex-col h-full border-l border-border bg-surface w-72 flex-shrink-0">
-      <div className="flex items-center justify-between px-2 py-2 border-b border-border gap-1 flex-wrap">
-        <div className="flex gap-1 flex-wrap">
+    <div className="flex flex-col h-full border-l border-border bg-surface w-full sm:w-72 flex-shrink-0">
+      {/* Header */}
+      <div className="flex items-center justify-between px-2 py-2 border-b border-border gap-1 flex-shrink-0">
+        <div className="flex gap-1 flex-wrap flex-1 min-w-0">
           {TABS.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               className={clsx(
-                'px-2 py-1 rounded text-[11px] font-medium transition-colors',
-                tab === t.id ? 'bg-accent text-white' : 'text-muted hover:text-text'
+                'px-2 py-1 rounded text-[11px] font-medium transition-colors whitespace-nowrap',
+                tab === t.id ? 'bg-accent text-white' : 'text-muted hover:text-text hover:bg-border'
               )}
             >
-              {t.label}
+              {t.id === 'nodes' ? `Nodes (${nodes.length})` : t.label}
             </button>
           ))}
         </div>
         {onClose && (
-          <button onClick={onClose} className="text-muted hover:text-text ml-auto">
+          <button onClick={onClose} className="text-muted hover:text-text p-1 flex-shrink-0 ml-1">
             <X size={14} />
           </button>
         )}
       </div>
 
+      {/* Content */}
       <div className="flex-1 overflow-hidden">
         {tab === 'details' ? (
           selectedNodeId ? (
@@ -86,10 +90,12 @@ export default function IntelPanel({ onEnrich, onClose }: Props) {
               </div>
             )}
           </div>
-        ) : tab === 'timeline' ? (
-          <TimelinePanel />
         ) : tab === 'search' ? (
           <GraphSearch />
+        ) : tab === 'timeline' ? (
+          <TimelinePanel />
+        ) : tab === 'mitre' ? (
+          <MitrePanel />
         ) : (
           <AISummary />
         )}
