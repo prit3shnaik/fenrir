@@ -5,6 +5,13 @@ import { AbuseIPDBScanner } from './abuseipdb'
 import { OTXScanner } from './otx'
 import { TriageScanner } from './triage'
 import { WebCheckScanner } from './webcheck'
+import { ShodanScanner } from './shodan'
+import { GreyNoiseScanner } from './greynoise'
+import { MalwareBazaarScanner } from './malwarebazaar'
+import { WhoisScanner } from './whois'
+import { BGPViewScanner } from './bgpview'
+import { CrtShScanner } from './crtsh'
+import { TorCheckScanner } from './torcheck'
 
 export const SCANNERS: ScannerProvider[] = [
   new VirusTotalScanner(),
@@ -13,6 +20,13 @@ export const SCANNERS: ScannerProvider[] = [
   new OTXScanner(),
   new TriageScanner(),
   new WebCheckScanner(),
+  new ShodanScanner(),
+  new GreyNoiseScanner(),
+  new MalwareBazaarScanner(),
+  new WhoisScanner(),
+  new BGPViewScanner(),
+  new CrtShScanner(),
+  new TorCheckScanner(),
 ]
 
 export function detectIndicatorType(value: string): IndicatorType {
@@ -32,7 +46,7 @@ export async function enrichIndicator(
 
   const results = await Promise.allSettled(
     applicable.map(s => {
-      const key = apiKeys[s.name.toLowerCase().replace(/\s/g, '')] ?? ''
+      const key = apiKeys[s.name.toLowerCase().replace(/[\s.]/g, '')] ?? ''
       return s.scan(indicator, type, key)
     })
   )
