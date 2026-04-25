@@ -10,12 +10,15 @@ interface Props {
   onClose: () => void
 }
 
-const KEYS: { id: keyof ApiKeys; label: string; url: string }[] = [
-  { id: 'virustotal', label: 'VirusTotal', url: 'https://www.virustotal.com/gui/my-apikey' },
-  { id: 'urlscan', label: 'URLScan.io', url: 'https://urlscan.io/user/profile/' },
-  { id: 'abuseipdb', label: 'AbuseIPDB', url: 'https://www.abuseipdb.com/account/api' },
-  { id: 'otx', label: 'AlienVault OTX', url: 'https://otx.alienvault.com/settings' },
-  { id: 'triage', label: 'Hatching Triage', url: 'https://tria.ge/user' },
+const KEYS: { id: keyof ApiKeys; label: string; url: string; required: boolean }[] = [
+  { id: 'virustotal', label: 'VirusTotal', url: 'https://www.virustotal.com/gui/my-apikey', required: true },
+  { id: 'urlscan', label: 'URLScan.io', url: 'https://urlscan.io/user/profile/', required: false },
+  { id: 'abuseipdb', label: 'AbuseIPDB', url: 'https://www.abuseipdb.com/account/api', required: false },
+  { id: 'otx', label: 'AlienVault OTX', url: 'https://otx.alienvault.com/settings', required: false },
+  { id: 'triage', label: 'Hatching Triage', url: 'https://tria.ge/user', required: false },
+  { id: 'shodan', label: 'Shodan', url: 'https://account.shodan.io/', required: false },
+  { id: 'greynoise', label: 'GreyNoise', url: 'https://viz.greynoise.io/account/api-key', required: false },
+  { id: 'claude', label: 'Claude AI (for summaries)', url: 'https://console.anthropic.com/', required: false },
 ]
 
 export default function SettingsModal({ open, onClose }: Props) {
@@ -44,9 +47,8 @@ export default function SettingsModal({ open, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-      <div className="bg-surface border border-border rounded-2xl w-full max-w-md shadow-glow">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="bg-surface border border-border rounded-2xl w-full max-w-md shadow-glow max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-2">
             <Key size={16} className="text-accent" />
             <span className="font-semibold text-sm">API Configuration</span>
@@ -54,13 +56,17 @@ export default function SettingsModal({ open, onClose }: Props) {
           <button onClick={onClose} className="text-muted hover:text-text"><X size={16} /></button>
         </div>
 
-        {/* Keys */}
-        <div className="p-4 flex flex-col gap-3">
+        <div className="p-4 flex flex-col gap-3 overflow-y-auto flex-1">
           <p className="text-xs text-muted">Keys stored locally in IndexedDB. Never sent to any server.</p>
-          {KEYS.map(({ id, label, url }) => (
+          <p className="text-xs text-muted/60">No-key providers (WHOIS, BGPView, crt.sh, TorCheck, MalwareBazaar) run automatically.</p>
+
+          {KEYS.map(({ id, label, url, required }) => (
             <div key={id}>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-medium text-textDim">{label}</label>
+                <label className="text-xs font-medium text-textDim flex items-center gap-1">
+                  {label}
+                  {required && <span className="text-accent text-[10px]">*</span>}
+                </label>
                 <a href={url} target="_blank" rel="noopener noreferrer"
                   className="text-xs text-accent hover:underline">Get key ↗</a>
               </div>
@@ -76,19 +82,18 @@ export default function SettingsModal({ open, onClose }: Props) {
                   onClick={() => setShow(s => ({ ...s, [id]: !s[id] }))}
                   className="p-2 rounded-lg border border-border text-muted hover:text-text"
                 >
-                  {show[id] ? <EyeOff size={13} /> : <Eye size={13} />}
+                  {show[id] ? <EyeOff size={13} /> : <Eye size={13] />}
                 </button>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-2 p-4 border-t border-border">
+        <div className="flex justify-end gap-2 p-4 border-t border-border flex-shrink-0">
           <button onClick={onClose} className="px-4 py-2 text-sm text-muted hover:text-text">Cancel</button>
           <button
             onClick={handleSave}
-            className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accentHover text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accentHover text-white rounded-lg text-sm font-medium"
           >
             <Save size={13} />
             {saved ? 'Saved!' : 'Save Keys'}
