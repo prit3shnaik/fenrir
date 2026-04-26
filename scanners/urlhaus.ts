@@ -11,101 +11,78 @@ export class URLHausScanner implements ScannerProvider {
 
     if (type === 'hash') {
       endpoint = 'https://urlhaus-api.abuse.ch/v1/payload/'
-      body = `md5_hash=${indicator}`
-      if (indicator.length === 64) body = `sha256_hash=${indicator}`
+      body = indicator.length === 64
+        ? `sha256_hash=${encodeURIComponent(indicator)}`
+        : `md5_hash=${encodeURIComponent(indicator)}`
     } else if (type === 'url') {
       endpoint = 'https://urlhaus-api.abuse.ch/v1/url/'
       body = `url=${encodeURIComponent(indicator)}`
     } else {
+      // ip or domain → use host endpoint
       endpoint = 'https://urlhaus-api.abuse.ch/v1/host/'
-      body = `host=${indicator}`
+      body = `host=${encodeURIComponent(indicator)}`
     }
 
     const res = await proxyFetch(endpoint, {
       method: 'POST',
+      // URLhaus requires this exact content-type — no charset, no boundary
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
     })
 
     if (!res.ok) throw new Error(`URLhaus HTTP ${res.status}`)
+
     const data = await res.json() as Record<string, unknown>
-
     const queryStatus = data.query_status as string | undefined
-    const notFound = queryStatus === 'no_results' || queryStatus === 'invalid_url'
 
-    if (notFound) {
+    if (
+      queryStatus === 'no_results' ||
+      queryStatus === 'invalid_url' ||
+      queryStatus === 'invalid_host' ||
+      queryStatus === 'not_found'
+    ) {
       return {
-        provider: 'URLhaus',
-        indicatorType: type,
-        indicator,
-        riskScore: 0,
-        confidence: 0.85,
-        tags: ['not-found'],
-        relationships: [],
-        rawData: data,
-        timestamp: Date.now(),
+        provider: 'URLhaus', indicatorType: type, indicator,
+        riskScore: 0, confidence: 0.85, tags: ['not-found'],
+        relationships: [], rawData: data, timestamp: Date.now(),
       }
     }
 
     const tags: string[] = []
     const relationships: RelationshipHint[] = []
 
-    // URL/host mode
-    const urls = (data.urls as Record<string, unknown>[]) ?? []
-    const urlStatus = data.url_status as string | undefined
-    const threat = data.threat as string | undefined
+    const urlStatus    = data.url_status   as string | undefined
+    const threat       = data.threat       as string | undefined
+    const malwareName  = data.signature    as string | undefined
+    const fileType     = data.file_type    as string | undefined
+    const urls         = (data.urls        as Record<string, unknown>[]) ?? []
 
-    if (urlStatus === 'online') { tags.push('online'); }
+    if (urlStatus === 'online')  tags.push('online')
     if (urlStatus === 'offline') tags.push('offline')
-    if (threat) tags.push(threat)
-
-    urls.slice(0, 5).forEach(u => {
-      const t = u.threat as string | undefined
-      const tags2 = u.tags as string[] | undefined
-      if (t) tags.push(t)
-      if (tags2) tags.push(...tags2.slice(0, 3))
-      const urlStr = u.url as string | undefined
-      if (urlStr && type !== 'url') {
-        relationships.push({
-          targetLabel: urlStr,
-          targetType: 'Indicator',
-          edgeType: 'related_to',
-        })
-      }
-    })
-
-    // Hash/payload mode
-    const malwareFamilies = (data.signature as string | undefined)
-    if (malwareFamilies) {
-      tags.push(malwareFamilies)
-      relationships.push({
-        targetLabel: malwareFamilies,
-        targetType: 'Threat',
-        edgeType: 'related_to',
-      })
+    if (threat)      tags.push(threat)
+    if (malwareName) {
+      tags.push(malwareName)
+      relationships.push({ targetLabel: malwareName, targetType: 'Threat', edgeType: 'related_to' })
     }
-
-    const fileType = data.file_type as string | undefined
     if (fileType) tags.push(fileType)
 
-    const isOnline = urlStatus === 'online' || queryStatus === 'is_host'
-    const hasUrls = urls.length > 0
+    urls.slice(0, 5).forEach(u => {
+      const t  = u.threat as string   | undefined
+      const t2 = u.tags   as string[] | undefined
+      if (t)  tags.push(t)
+      if (t2) tags.push(...t2.slice(0, 3))
+    })
 
     let riskScore = 0
-    if (isOnline) riskScore = 85
-    else if (hasUrls) riskScore = 65
-    else if (data.sha256_hash) riskScore = 90 // found in payload DB = malware
+    if (data.sha256_hash || data.md5_hash) riskScore = 90  // found in payload DB
+    else if (urlStatus === 'online')        riskScore = 85
+    else if (urls.length > 0)              riskScore = 60
 
     return {
-      provider: 'URLhaus',
-      indicatorType: type,
-      indicator,
-      riskScore,
-      confidence: 0.9,
+      provider: 'URLhaus', indicatorType: type, indicator,
+      riskScore, confidence: 0.9,
       tags: [...new Set(tags)].filter(Boolean),
-      relationships,
-      rawData: data,
-      timestamp: Date.now(),
+      relationships, rawData: data, timestamp: Date.now(),
     }
   }
 }
