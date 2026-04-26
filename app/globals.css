@@ -16,6 +16,8 @@
   --color-text-dim:     #94a3b8;
   --rf-bg:              #0a0a0f;
   --rf-dot:             #1e1e2e;
+  --rf-minimap-bg:      #111118;
+  --rf-minimap-mask:    rgba(10,10,15,0.6);
 }
 
 .light {
@@ -30,6 +32,8 @@
   --color-text-dim:     #475569;
   --rf-bg:              #f1f5f9;
   --rf-dot:             #cbd5e1;
+  --rf-minimap-bg:      #ffffff;
+  --rf-minimap-mask:    rgba(241,245,249,0.6);
 }
 
 * { box-sizing: border-box; }
@@ -46,11 +50,29 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* React Flow */
-.react-flow { background: var(--rf-bg) !important; }
-.react-flow__background { background: var(--rf-bg) !important; }
-.react-flow__edge-path { stroke: var(--color-accent) !important; opacity: 0.6; }
-.react-flow__edge-path:hover { opacity: 1; }
+/* ── React Flow — theme-aware overrides ── */
+.react-flow,
+.react-flow__renderer,
+.react-flow__container {
+  background: var(--rf-bg) !important;
+}
+
+.react-flow__background {
+  background: var(--rf-bg) !important;
+}
+
+.react-flow__background pattern circle,
+.react-flow__background pattern rect {
+  fill: var(--rf-dot) !important;
+}
+
+.react-flow__edge-path {
+  stroke: var(--color-accent) !important;
+  opacity: 0.6;
+}
+
+.react-flow__edge-path:hover { opacity: 1 !important; }
+
 .react-flow__edge-text { fill: var(--color-text-dim) !important; font-size: 10px; }
 .react-flow__edge-textbg { fill: var(--color-surface) !important; }
 
@@ -59,8 +81,9 @@ html, body {
   border: 1px solid var(--color-border) !important;
   border-radius: 12px !important;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
 }
+
 .react-flow__controls-button {
   background: var(--color-surface) !important;
   border-color: var(--color-border) !important;
@@ -69,16 +92,38 @@ html, body {
   width: 28px !important;
   height: 28px !important;
 }
+
 .react-flow__controls-button:hover {
   background: var(--color-border) !important;
 }
+
+.react-flow__controls-button svg {
+  fill: var(--color-text) !important;
+}
+
+/* MiniMap — this is the key fix */
 .react-flow__minimap {
-  background: var(--color-surface) !important;
+  background: var(--rf-minimap-bg) !important;
   border: 1px solid var(--color-border) !important;
   border-radius: 12px !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
 }
+
+.react-flow__minimap-svg {
+  background: var(--rf-minimap-bg) !important;
+}
+
+.react-flow__minimap-mask {
+  fill: var(--rf-minimap-mask) !important;
+}
+
 .react-flow__panel { margin: 10px !important; }
+
+/* Pane background — critical for light mode */
+.react-flow__pane {
+  background: var(--rf-bg) !important;
+}
 
 /* Scrollbars */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -86,7 +131,7 @@ html, body {
 ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
 
-/* Node pulse */
+/* Node pulse animation */
 @keyframes pulse-ring {
   0%   { box-shadow: 0 0 0 0 var(--color-accent-glow); }
   70%  { box-shadow: 0 0 0 8px transparent; }
@@ -99,5 +144,4 @@ html, body {
   .toolbar-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 8px); }
 }
 
-/* Prevent text selection on graph interactions */
 .react-flow__node { user-select: none; }
